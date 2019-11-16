@@ -1,0 +1,208 @@
+#pragma once
+#include <cstdint>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+  void IRQ_Handler();
+#ifdef __cplusplus
+}
+#endif
+
+#define E2E_ISR_ENTRY()
+#define E2E_ISR_EXIT()
+
+typedef enum{
+   CHIP_HK,
+   CHIP_NPR,
+   NUM_CHIPS
+} chip_types_t;
+
+extern chip_types_t chip_type;
+extern void ignore();
+
+/* callback_t which was originally defined to be a function pointer is
+ * being re-defined as a class but mimic the behavior of that of a function 
+ * pointer.  When compiled for ISS, the assignment to a callback would also
+ * also call IRQ api's to register the function to the irq.
+ */
+class callback_t {
+public:
+  inline callback_t & operator = ( void (* const fn)() ) 
+    { 
+      if ( !fn || fn == ignore)
+      {
+        callback_function = nullptr;
+        irq_detach();
+      }
+      else if ( !callback_function )
+      {
+        /* Attaching for the first time, clear, attach and
+         * enable the interrupt
+         */
+        callback_function = fn;
+        irq_attach();
+      }
+      else
+      {
+        /* Replacing an existing handler */
+        callback_function = fn;
+        irq_replace();
+      }
+      return *this; 
+    }
+  
+  /* Comparision with a functino pointer == */
+  inline bool operator ==  ( void (*fn)() ) { return (callback_function == fn); }
+  
+  /* Comparision != with a function pointer */
+  inline bool operator != ( void (*fn)() ) { return (callback_function != fn); }
+  
+  /* Check for null */
+  inline bool operator !  () { return (!callback_function); }
+  
+  /* De-reference operator.  In case the alternate syntax as like 
+   * (* fn_ptr ) () is used on callback_t rather than fn_ptr () syntax
+   */
+  inline callback_t & operator * () { return *this; }
+  
+  /* Function call operator */
+  inline void operator () () { return (*callback_function)(); }
+  
+  /* init function to set the callback function to null pointer */
+  inline void init() { callback_function = nullptr; }
+  
+private :
+  /* Private member function to attach the interrupt */
+  void irq_attach( );
+  void irq_detach( );
+  void irq_replace( );
+  
+  void (*callback_function)(void);
+};
+
+// Define structures for IRQ dispatch table
+union dispatch_table_t {
+  struct dispatches_t {
+    static const unsigned I_PHYRF_IRQS = 0; // index: 0
+    static const unsigned N_PHYRF_IRQS = 24;
+    
+    static const unsigned I_RXTD_IRQS  = I_PHYRF_IRQS + N_PHYRF_IRQS; // 24
+    static const unsigned N_RXTD_IRQS  = 16;
+    
+    static const unsigned I_TXTD_IRQS  = I_RXTD_IRQS + N_RXTD_IRQS; // 40
+    static const unsigned N_TXTD_IRQS  = 16;
+    
+    static const unsigned I_DEMF0_IRQS  = I_TXTD_IRQS + N_TXTD_IRQS; // 56
+    static const unsigned N_DEMF0_IRQS  = 16;
+    
+    static const unsigned I_DEMF1_IRQS  = I_DEMF0_IRQS + N_DEMF0_IRQS; // 72
+    static const unsigned N_DEMF1_IRQS  = 16;
+
+    static const unsigned I_PMI_IRQS  = I_DEMF1_IRQS + N_DEMF1_IRQS; // 88
+    static const unsigned N_PMI_IRQS  = 16;
+
+    static const unsigned I_ROBE_IRQS  = I_PMI_IRQS + N_PMI_IRQS; // 104
+    static const unsigned N_ROBE_IRQS  = 16;
+
+    static const unsigned I_TXFD_IRQS  = I_ROBE_IRQS + N_ROBE_IRQS; // 120
+    static const unsigned N_TXFD_IRQS  = 32;
+
+    static const unsigned I_PHYRF_DMAS = I_TXFD_IRQS + N_TXFD_IRQS; // 152
+    static const unsigned N_PHYRF_DMAS = 8;
+
+    static const unsigned I_RXTD_DMAS  = I_PHYRF_DMAS + N_PHYRF_DMAS; // 160
+    static const unsigned N_RXTD_DMAS  = 4;
+
+    static const unsigned I_TXTD_DMAS  = I_RXTD_DMAS + N_RXTD_DMAS; // 164
+    static const unsigned N_TXTD_DMAS  = 4;
+
+    static const unsigned I_DEMF0_DMAS  = I_TXTD_DMAS + N_TXTD_DMAS; // 168
+    static const unsigned N_DEMF0_DMAS  = 8;
+
+    static const unsigned I_ROBE_DMAS  = I_DEMF0_DMAS + N_DEMF0_DMAS; // 176
+    static const unsigned N_ROBE_DMAS  = 6;
+
+    static const unsigned I_PMI_DMAS  = I_ROBE_DMAS + N_ROBE_DMAS; // 182
+    static const unsigned N_PMI_DMAS  = 2;
+
+    static const unsigned I_TXFD_DMAS  = I_PMI_DMAS + N_PMI_DMAS; // 184
+    static const unsigned N_TXFD_DMAS  = 8;
+
+    static const unsigned I_DEMF1_DMAS  = I_TXFD_DMAS + N_TXFD_DMAS; // 192
+    static const unsigned N_DEMF1_DMAS  = 8;
+
+    static const unsigned I_Q6_IRQS  = I_DEMF1_DMAS + N_DEMF1_DMAS; // 200
+    static const unsigned N_Q6_IRQS  = 8;
+
+    static const unsigned I_MISC_IRQS =  I_Q6_IRQS + N_Q6_IRQS ; // 208
+    static const unsigned N_MISC_IRQS = 32;
+
+    static const unsigned N_DISPATCHES = I_MISC_IRQS + N_MISC_IRQS;  // 240
+
+
+    callback_t      phyrf_irqs[N_PHYRF_IRQS];
+    callback_t      rxtd_irqs[N_RXTD_IRQS];
+    callback_t      txtd_irqs[N_TXTD_IRQS];
+    callback_t      demf0_irqs[N_DEMF0_IRQS];
+    callback_t      demf1_irqs[N_DEMF1_IRQS];
+    callback_t      pmi_irqs[N_PMI_IRQS];
+    callback_t      robe_irqs[N_ROBE_IRQS];
+    callback_t      txfd_irqs[N_TXFD_IRQS];
+    callback_t      phyrf_dmas[N_PHYRF_DMAS];
+    callback_t      rxtd_dmas[N_RXTD_DMAS];
+    callback_t      txtd_dmas[N_TXTD_DMAS];
+    callback_t      demf0_dmas[N_DEMF0_DMAS];
+    callback_t      robe_dmas[N_ROBE_DMAS];
+    callback_t      pmi_dmas[N_PMI_DMAS];
+    callback_t      txfd_dmas[N_TXFD_DMAS];
+    callback_t      demf1_dmas[N_DEMF1_DMAS];
+    callback_t      q6_irqs[N_Q6_IRQS];
+    callback_t      misc_irqs[N_MISC_IRQS];
+  } dispatches;
+  callback_t callbacks[sizeof(dispatches_t)/sizeof(callback_t)];
+
+  // Definitions for the 32 MISC interrupts in the system.
+  // These interrupts start at NVIC::USER #208
+  enum M3_MISC_IRQS {
+    PMM_RRI_REG_SAVE = 0,               // 208
+    PMM_RRI_REG_RESTORE,                // 209
+    PHY_NOC_ERROR,                      // 210
+    PHY_NOC_TIMEOUT,                    // 211
+    HW_WATCHDOG_TIMEOUT,                // 212
+    DUAL_TIMER_INTERRUPT_1,             // 213
+    DUAL_TIMER_INTERRUPT_2,             // 214
+    DUAL_TIMER_INTERRUPT_3,             // 215
+    NAPIER_PMM_IDLE_REQUEST_RISING,     // 216
+    NAPIER_PMM_IDLE_REQUEST_FALLING,    // 217
+    M3_TO_M3_1,                         // 218
+    M3_TO_M3_2,                         // 219
+    M3_TO_M3_3,                         // 220
+    M3_TO_M3_4,                         // 221
+    UNUSED_IRQ_222,                     // 222 
+    UNUSED_IRQ_223,                     // 223
+    UNUSED_IRQ_224,                     // 224
+    UNUSED_IRQ_225,                     // 225
+    UNUSED_IRQ_226,                     // 226
+    UNUSED_IRQ_227,                     // 227
+    UNUSED_IRQ_228,                     // 228
+    UNUSED_IRQ_229,                     // 229
+    UNUSED_IRQ_230,                     // 230
+    UNUSED_IRQ_231,                     // 231
+    UNUSED_IRQ_232,                     // 232
+    UNUSED_IRQ_233,                     // 233
+    UNUSED_IRQ_234,                     // 234
+    UNUSED_IRQ_235,                     // 235
+    UNUSED_IRQ_236,                     // 236
+    UNUSED_IRQ_237,                     // 237
+    UNUSED_IRQ_238,                     // 238
+    UNUSED_IRQ_239,                     // 239
+  };
+};
+
+extern void do_dispatch(unsigned index);
+extern void do_init_all();
+
+extern dispatch_table_t dispatch_table;
+
+

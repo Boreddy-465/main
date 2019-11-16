@@ -1,0 +1,104 @@
+// UCode object initialization and interrupt dispatcher
+
+// Needed until we figure out a clean way of defining this.
+
+#include <cstdint>
+
+// #include "cmsis_armcc.h"
+
+#include "dispatch.h"
+// #include "irq.h"
+
+
+uint32_t m3_isr_exit_ctr = 0;
+dispatch_table_t dispatch_table;
+
+
+// UCode object initialization
+
+typedef void (*void_func)();
+
+void idle() {}
+
+void_func init_table[] = {
+   idle
+};
+
+void ContextSaveISR() {
+  // fw_msg_start(); fw_msg_str("\nISR: Context Save requested\n");
+  return;
+}
+
+void ContextRestoreISR() {
+  // fw_msg_start(); fw_msg_str("\nISR: Context Restore requested\n");
+  return;
+}
+
+void Init_PMM_ISR_Handlers() {
+  int32_t pmm_isr_index = dispatch_table_t::dispatches_t::I_MISC_IRQS;
+  dispatch_table.callbacks[pmm_isr_index] = ContextSaveISR;
+  pmm_isr_index++;
+  dispatch_table.callbacks[pmm_isr_index] = ContextRestoreISR;
+}
+
+chip_types_t chip_type = CHIP_HK;
+
+void do_init_all()
+{
+  // Attach the PMM ISR handlers before initializing the system.
+  Init_PMM_ISR_Handlers();
+}
+
+// UCode interrupt dispatcher
+
+void do_dispatch(unsigned index)
+{
+  if (index < sizeof(dispatch_table_t::dispatches_t) / sizeof(callback_t))
+  {
+    if (dispatch_table.callbacks[index] != nullptr)
+    {
+      dispatch_table.callbacks[index]();
+    }
+    else
+    {
+      // DEBUG_COUT("ERROR: do_dispatch(" << std::dec << index << ") call to unassigned dispatch routine");
+    }
+  }
+}
+
+void ignore()
+{
+  // M3_ISR_ENTRY();
+  // No processing, but this will write exit marker for phydbg to capture the event
+  // M3_ISR_EXIT();
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+  void IRQ_Handler()
+  {
+    uint32_t irq_id {0};
+    // irq_id = __get_IPSR()-16;
+    // fw_msg_start(); fw_msg_str("IRQ_H: "); fw_msg_int(irq_id); fw_msg_str("\n");
+    do_dispatch(irq_id);
+  }
+
+#ifdef __cplusplus
+}
+#endif
+
+
+void callback_t::irq_attach( )
+{
+}
+
+void callback_t::irq_detach( )
+{
+}
+
+void callback_t::irq_replace( )
+{
+}
+

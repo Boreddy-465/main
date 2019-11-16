@@ -1,0 +1,362 @@
+/*****************************************************************************
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+--                                                                          --
+-- QUALCOMM Proprietary                                                     --
+-- Copyright (c) 1999-2008  QUALCOMM Incorporated.  All rights reserved.    --
+--                                                                          --
+-- All data and information contained in or disclosed by this document are  --
+-- confidential and proprietary information of QUALCOMM Incorporated, and   --
+-- all rights therein are expressly reserved. By accepting this material,   --
+-- the recipient agrees that this material and the information contained    --
+-- therein are held in confidence and in trust and will not be used,        --
+-- copied, reproduced in whole or in part, nor its contents revealed in     --
+-- any manner to others without the express written permission of QUALCOMM  --
+-- Incorporated.                                                            --
+--                                                                          --
+-- This technology was exported from the United States in accordance with   --
+-- the Export Administration Regulations. Diversion contrary to U.S. law    --
+-- prohibited.                                                              --
+--                                                                          --
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+-- Author      : Sharihar                                                   --
+-- Description : template                                                   --
+-- Notes       :                                                            --
+------------------------------------------------------------------------------
+*****************************************************************************/
+
+#include "vv_test.h"
+#include "vv_test_result.h"
+#include "vv_msg.h"
+#include "main.h"
+//AM #include "VVDRV_prontoss_FreqPlan.h"
+//AM #include <rt_misc.h>
+//AM #include "pronto_a9_debug.h"
+#include "pronto_lp_frodo.h"
+
+
+#define VV_MSG_FILE_NUMBER 0
+
+
+//for example :
+#define ETM_COMPONENT_ID0 0x0D
+#define ETM_COMPONENT_ID1 0x90
+#define ETM_COMPONENT_ID2 0x05
+#define ETM_COMPONENT_ID3 0xB1
+
+#define ETM_PERIPHERLA_ID0 0x24
+#define ETM_PERIPHERLA_ID1 0xB9
+#define ETM_PERIPHERLA_ID2 0x2B
+#define ETM_PERIPHERLA_ID3 0x00
+#define ETM_PERIPHERLA_ID4 0x04
+#define ETM_PERIPHERLA_ID5 0x00
+#define ETM_PERIPHERLA_ID6 0x00
+#define ETM_PERIPHERLA_ID7 0x00
+
+#define ETM_CLAIMSET_VALUE  0xF  
+#define ETM_CLAIMSET_RD_VALUE  0xFF  
+#define ETM_LOCK_STATUS_DEFAULT_VALUE		 0x0      
+#define ETM_LOCK_STATUS_VALUE			 0xC0 // FIX THIS
+#define ETM_UNLOCK_STATUS_VALUE			 0x01 // FIX THIS
+
+#define ETM_DEV_TYPE_VALUE			 0x13 
+#define ETM_DEVID_VALUE			   	 0x00 // FIX THIS
+
+#define CTIPERIPHID0_VAL			 0x06 
+#define CTIPERIPHID1_VAL			 0x09 
+#define CTIPERIPHID2_VAL			 0x4B 
+#define CTIPERIPHID3_VAL			 0x00 
+#define CTIPERIPHID4_VAL			 0x04 
+#define CTIPERIPHID5_VAL			 0x00 
+#define CTIPERIPHID6_VAL			 0x00 
+#define CTIPERIPHID7_VAL			 0x00 
+
+#define CTI_COMPID0_VAL			 	 0x0D 
+#define CTI_COMPID1_VAL			 	 0x90 
+#define CTI_COMPID2_VAL			 	 0x05 
+#define CTI_COMPID3_VAL			 	 0xB1 
+
+
+#define CTI_LOCK_STATUS_VALUE			 0x3 // DBGEN is not considered (masked in test)
+#define CTI_UNLOCK_STATUS_VALUE			 0x1 // DBGEN is not considered (masked in test)
+
+
+#define ETM_LOCK_VALUE    0xFFFFFFFF
+#define ETM_UNLOCK_VALUE  0xC5ACCE55 
+#define CTILOCK_VALUE     0xFFFFFFFF
+#define CTIUNLOCK_VALUE   0xC5ACCE55
+
+extern unsigned int bottom_of_heap;     /* defined in heap.s */
+
+int vv_test(void)
+
+{
+  uint32 read_data = 0;
+  uint32 exp_data = 0;
+  uint32 err_count= 0;
+  uint32 err_bit= 1;
+
+  //******************************************************************
+  // ETM REG ACCESS CHECK
+  //******************************************************************
+
+    read_data=inp(ETM_ETMCID0); //0xE0041FF0
+    exp_data=ETM_COMPONENT_ID0; //0x0000000D
+    if (exp_data != read_data)
+       err_count = err_count + 1 ; 
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+     err_bit= err_bit << 1; 
+
+    read_data=inp(ETM_ETMCID1); //0xE0041FF4
+    exp_data=ETM_COMPONENT_ID1; //0x00000090
+    if (exp_data != read_data)
+       err_count = err_count + 1 ; 
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+     err_bit= err_bit << 1; 
+       
+    read_data=inp(ETM_ETMCID2);  //0xE0041FF8
+    exp_data=ETM_COMPONENT_ID2;  //0x00000005
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(ETM_ETMCID3);   //0xE0041FFC
+    exp_data=ETM_COMPONENT_ID3;   //0x000000B1
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(ETM_ETMPID0);   //0xE0041FE0
+    exp_data=ETM_PERIPHERLA_ID0;  //0x00000024
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(ETM_ETMPID1);    //0xE0041FE4
+    exp_data=ETM_PERIPHERLA_ID1;   //0x000000B9
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(ETM_ETMPID2);    //0xE0041FE8
+    exp_data=ETM_PERIPHERLA_ID2;   //0x0000002B  -->3B 
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(ETM_ETMPID3);    //0xE0041FEC
+    exp_data=ETM_PERIPHERLA_ID3;   //0x00000000
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(ETM_ETMPID4);   //0xE0041FD0
+    exp_data=ETM_PERIPHERLA_ID4;  //0x00000004
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(ETM_ETMPID5);   //0xE0041FD4
+    exp_data=ETM_PERIPHERLA_ID5;  //0x00000000
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(ETM_ETMPID6);    //0xE0041FD8
+    exp_data=ETM_PERIPHERLA_ID6;   //0x00000000   
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(ETM_ETMPID7);     //0xE0041FDC
+    exp_data=ETM_PERIPHERLA_ID7;    //0x00000000
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    // ETM LOCK ACCESS CHECK 
+    //-----------------------
+
+
+    read_data=inp(ETM_ETMAUTHSTATUS /*AUTHSTATUS*/);   //0xE0041FB8	
+    exp_data= ETM_LOCK_STATUS_DEFAULT_VALUE;           //0x00000000   
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    outp(ETM_ETMLAR /*ETM_LOCK_ACCESS_REG*/,ETM_LOCK_VALUE); //0xE0041FB0  //Needs to be checked AM 
+    outp(ETM_ETMCLAIMSET /*ETM_LOCK_ACCESS_REG*/,ETM_CLAIMSET_VALUE );
+    read_data=inp(ETM_ETMCLAIMSET /*AUTHSTATUS*/);	
+    exp_data= ETM_LOCK_STATUS_DEFAULT_VALUE ;
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    outp(ETM_ETMLAR /*ETM_LOCK_ACCESS_REG*/,ETM_UNLOCK_VALUE); //0xE0041FB0  //Needs to be checked AM
+    outp(ETM_ETMCLAIMSET /*ETM_LOCK_ACCESS_REG*/,ETM_CLAIMSET_VALUE );
+    read_data=inp(ETM_ETMCLAIMSET /*AUTHSTATUS*/);   //0xE0041FA0  	
+    exp_data= ETM_CLAIMSET_RD_VALUE  ;
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+    //-----------------------
+
+    read_data=inp(ETM_ETMDEVTYPE);   //0xE0041FCC 	
+    exp_data= ETM_DEV_TYPE_VALUE;    //0x00000013   
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+//AM     read_data=inp(DEVID);	
+//AM     exp_data= ETM_DEVID_VALUE;
+//AM     if (exp_data != read_data)
+//AM        err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+//AM     err_bit= err_bit << 1; 
+  //******************************************************************
+  // CTI REG ACCESS CHECK
+  //******************************************************************
+    
+    read_data=inp(CTI_PERIPHID0);    //0xE0042FE0
+    exp_data= CTIPERIPHID0_VAL;      //0x6  
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(CTI_PERIPHID1);    //0xE0042FE4  
+    exp_data= CTIPERIPHID1_VAL;      //0x9  
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(CTI_PERIPHID2);    //0xE0042FE8
+    exp_data= CTIPERIPHID2_VAL;      //0x4B 
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(CTI_PERIPHID3);    //0xE0042FEC 
+    exp_data= CTIPERIPHID3_VAL;      //0x0
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(CTI_PERIPHID4);    //0xE0042FD0  
+    exp_data= CTIPERIPHID4_VAL;      //0x4 
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(CTI_PERIPHID5);     //0xE0042FD4  
+    exp_data= CTIPERIPHID5_VAL;       //0x0   
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(CTI_PERIPHID6);    //0xE0042FD8
+    exp_data= CTIPERIPHID6_VAL;      //0x0  
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(CTI_PERIPHID7);    //0xE0042FDC  
+    exp_data= CTIPERIPHID7_VAL;      //0x0   
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+
+
+    //--------------------------------
+    read_data=inp(CTI_COMPID0 /*CTI_COMPID0_REG*/);    //0xE0042FF0 
+    exp_data= CTI_COMPID0_VAL;
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(CTI_COMPID1 /*CTI_COMPID1_REG*/);      //0xE0042FF4  
+    exp_data= CTI_COMPID1_VAL;
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(CTI_COMPID2 /*CTI_COMPID2_REG*/);     //0xE0042FF8 
+    exp_data= CTI_COMPID2_VAL;
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+
+    read_data=inp(CTI_COMPID3);i    //0xE0042FFC
+    exp_data= CTI_COMPID3_VAL;
+    if (exp_data != read_data)
+       err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+    err_bit= err_bit << 1; 
+   //---------------------------------
+   // CTI LOCK ACCESS CHECK
+   //---------------------------------
+
+     read_data=inp(CTI_AUTHSTATUS /*CTISTATUS_REG*/);   //0xE0042FB8   
+     exp_data= CTI_LOCK_STATUS_VALUE;
+     if (exp_data != read_data)
+        err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+     err_bit= err_bit << 1; 
+
+     outp(CTI_LAR /*CTILOCK_REG*/,CTIUNLOCK_VALUE);
+     read_data=inp(CTI_AUTHSTATUS /*CTISTATUS_REG*/);
+     exp_data= CTI_UNLOCK_STATUS_VALUE;
+     if (exp_data != read_data)
+        err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+     err_bit= err_bit << 1; 
+
+     outp(CTI_LAR /*CTILOCK_REG*/,CTILOCK_VALUE);    //0xE0042FB0
+     read_data=inp(CTI_AUTHSTATUS /*CTISTATUS_REG*/);
+     exp_data= CTI_LOCK_STATUS_VALUE;
+     if (exp_data != read_data)
+        err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+     err_bit= err_bit << 1; 
+
+     outp(CTI_LAR /*CTILOCK_REG*/,CTIUNLOCK_VALUE);      //0xE0042FB0
+     read_data=inp(CTI_AUTHSTATUS /*CTISTATUS_REG*/);
+     exp_data= CTI_UNLOCK_STATUS_VALUE;
+     if (exp_data != read_data)
+        err_count=err_count|err_bit,outp(CTI_COMPID3, err_count);
+     err_bit= err_bit << 1; 
+   //---------------------------------
+
+  //******************************************************************
+
+    outp(CTI_COMPID3,0x5555AAAA);
+    outp(CTI_COMPID3,err_count);
+    outp(CTI_COMPID3,err_bit);
+    outp(CTI_COMPID3,0x5555AAAA);
+
+  if(err_count != 0)
+   vv_test_fail();
+  else 
+   vv_test_pass(); 
+
+  return 0;
+}
+
+/*AM 
+__value_in_regs struct __initial_stackheap __user_initial_stackheap(
+        unsigned R0, unsigned SP, unsigned R2, unsigned SL)
+{
+    struct __initial_stackheap config;
+    
+    config.heap_base = (unsigned int)&bottom_of_heap; // defined in heap.s
+                                                      // placed by scatterfile   
+    config.stack_base = SP;   // inherit SP from the execution environment
+
+    return config;
+}
+AM */
+__asm(".global __use_no_semihosting");
+
+// dummy implementation of TTY I/O.
+extern /* "C" */ void   _ttywrch(int ch) { /* No I/O supported */ return; }
+// dummy implementation of C library I/O.
+extern /* "C" */ char * _sys_command_string (char *cmd, int len) { return (cmd);}
+
+extern /* "C" */ void   _sys_exit(int return_code) { /* Endless loop */ while(1) { volatile int i=0; i++ ; i--;}}
+//extern /*"C"*/ void   _sys_open() {} 
